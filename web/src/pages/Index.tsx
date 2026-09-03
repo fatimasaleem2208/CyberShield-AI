@@ -406,7 +406,116 @@ function IncidentDetail({ incident, onUpdate, onReport }: { incident: Incident; 
 function Assistant({ messages, setMessages, contextIncident }: { messages: ChatMessage[]; setMessages: (messages: ChatMessage[]) => void; contextIncident?: Incident }) { const [input, setInput] = useState<string>(""); const [typing, setTyping] = useState<boolean>(false); const suggestions = ["What happened and how should I respond?", "Why is this IP suspicious?", "Explain brute-force attacks"]; const send = (text: string) => { const trimmed = text.trim(); if (!trimmed || typing) return; const userMessage: ChatMessage = { id: `u-${Date.now()}`, role: "user", text: trimmed, time: "Now" }; setMessages([...messages, userMessage]); setInput(""); setTyping(true); window.setTimeout(() => { const response = mockAssistantResponse(trimmed, contextIncident); setMessages([...messages, userMessage, { id: `r-${Date.now()}`, role: "assistant", text: response, time: "Now" }]); setTyping(false); }, 900); }; return <div className="assistant-page"><div className="assistant-header"><div className="assistant-title"><div className="assistant-avatar"><Bot size={22} /></div><div><div className="eyebrow">CONTEXT-AWARE COPILOT</div><h1>CyberShield AI Assistant</h1><p>Ask questions about detections, incidents, or security posture.</p></div></div><Button variant="ghost" size="sm" onClick={() => setMessages([assistantSeed[0]])}><RefreshCw size={14} /> Clear chat</Button></div><div className="assistant-workspace"><div className="chat-panel"><div className="chat-messages">{messages.map((message) => <div key={message.id} className={`chat-message ${message.role}`}><div className="chat-message-avatar">{message.role === "assistant" ? <Bot size={14} /> : <span>SA</span>}</div><div><div className="chat-bubble">{message.text}</div><small>{message.time}</small></div></div>)}{typing && <div className="chat-message assistant"><div className="chat-message-avatar"><Bot size={14} /></div><div><div className="chat-bubble typing"><i /><i /><i /></div><small>Thinking through the telemetry...</small></div></div>}</div><div className="suggestion-row">{suggestions.map((suggestion) => <button key={suggestion} onClick={() => send(suggestion)}>{suggestion}</button>)}</div><form className="chat-composer" onSubmit={(event) => { event.preventDefault(); send(input); }}><input value={input} onChange={(event) => setInput(event.target.value)} placeholder="Ask about your security environment..." /><button type="submit" aria-label="Send message"><Send size={16} /></button></form><div className="chat-disclaimer"><CircleHelp size={12} /> Demo responses are grounded in synthetic workspace telemetry.</div></div><div className="assistant-context"><Panel title="Current context" subtitle="What the assistant can see"><div className="context-card"><span className="context-icon"><ShieldAlert size={16} /></span><div><strong>{contextIncident?.id ?? "Live workspace"}</strong><span>{contextIncident?.threat ?? "12,480 events · 5 active detections"}</span></div></div><div className="context-list"><div><span>Threat score</span><strong>42 / 100</strong></div><div><span>Active incidents</span><strong>3</strong></div><div><span>AI confidence</span><strong>98.6%</strong></div></div></Panel><Panel title="Response playbooks" subtitle="Suggested next steps"><button className="playbook-row"><LockKeyhole size={15} /><span>Contain credential attack</span><ChevronRight size={14} /></button><button className="playbook-row"><CloudCog size={15} /><span>Review cloud posture</span><ChevronRight size={14} /></button><button className="playbook-row"><FileBarChart size={15} /><span>Prepare executive report</span><ChevronRight size={14} /></button></Panel></div></div></div>; }
 function mockAssistantResponse(input: string, incident?: Incident): string { const lower = input.toLowerCase(); if (lower.includes("what happened") || lower.includes("respond")) return `CyberShield correlated ${incident?.related ?? 42} events into ${incident?.id ?? "INC-2048"}: ${incident?.threat ?? "a brute-force authentication pattern"}. The source ${incident?.source ?? "91.240.118.172"} generated repeated privileged login failures, raising the risk score to ${incident?.score ?? 94}. I recommend blocking the source, rotating affected credentials, confirming MFA, and reviewing successful logins around the alert window.`; if (lower.includes("ip") || lower.includes("suspicious")) return "This IP is suspicious because its request cadence is automated, its activity targets a privileged service, and it appears in a known reconnaissance pattern. The signal is stronger when combined with repeated failures and a short time window."; if (lower.includes("sql")) return "SQL injection attempts place database syntax into an input that the application may later interpret as a query. Use parameterized queries, strict input validation, least-privilege database accounts, and layered WAF rules."; if (lower.includes("brute")) return "A brute-force attack tries many credentials against one or more accounts. Watch for repeated failures, distributed source IPs, privileged targets, and successful access after a burst. Rate limiting, MFA, strong passwords, and account lockout controls reduce exposure."; return "I would start by opening the highest-risk detection, reviewing its related events, and validating the source against identity and cloud context. In this demo workspace, the clearest next step is to investigate INC-2048 and contain the credential attack."; }
 
-function Reports({ onGenerate, generated }: { onGenerate: () => void; generated: boolean }) { const [type, setType] = useState<string>("Daily Security Report"); return <div className="page-content"><SectionHeading eyebrow="GOVERNANCE + COMMUNICATION" title="Security reports" description="Create clear, executive-ready summaries from the current security posture." action={<Button size="sm" onClick={onGenerate} disabled={generated}><FileBarChart size={14} /> {generated ? "Report generated" : "Generate report"}</Button>} /><div className="reports-layout"><Panel title="Report builder" subtitle="Select a template and generate a current snapshot" className="report-builder"><div className="report-types">{["Daily Security Report", "Weekly Security Report", "Incident Report", "Threat Analysis Report"].map((item) => <button key={item} className={type === item ? "active" : ""} onClick={() => setType(item)}><span className="report-type-icon"><FileBarChart size={16} /></span><span><strong>{item}</strong><small>{item === "Incident Report" ? "Deep dive into one response" : "Posture, trends, and actions"}</small></span><ChevronRight size={14} /></button>)}</div><div className="report-builder-footer"><div><span className="card-label">ESTIMATED OUTPUT</span><strong>4 pages · PDF ready</strong></div><Button size="sm" onClick={onGenerate} disabled={generated}>{generated ? <><Check size={14} /> Ready to view</> : <><Sparkles size={14} /> Generate {type}</>}</Button></div></Panel><Panel title="Latest report preview" subtitle={generated ? "Generated just now · Demo workspace" : "Preview updates after generation"} className="report-preview"><div className={`report-paper ${generated ? "generated" : ""}`}><div className="report-paper-head"><div className="report-mini-brand"><div className="brand-mark"><Shield size={13} /></div><span>CyberShield <b>AI</b></span></div><span>CONFIDENTIAL · SOC</span></div><div className="report-paper-title"><span>SECURITY INTELLIGENCE</span><h2>{type}</h2><p>Prepared for Security Operations · August 19, 2026</p></div><div className="report-paper-score"><div><span>OVERALL SCORE</span><strong>42 <small>/ 100</small></strong><b>LOW RISK</b></div><div className="paper-mini-bars"><i /><i /><i /><i /><i /></div></div><div className="report-paper-grid"><div><span>THREATS DETECTED</span><strong>284</strong><small>+18.4% vs prior period</small></div><div><span>CRITICAL INCIDENTS</span><strong>3</strong><small>1 requires investigation</small></div><div><span>EVENTS ANALYZED</span><strong>12,480</strong><small>AI confidence 98.6%</small></div></div><div className="report-paper-line" /><div className="report-paper-summary"><span>EXECUTIVE SUMMARY</span><p>CyberShield AI observed elevated credential abuse and web attack activity. Existing controls contained the highest-risk requests, with one privileged authentication incident pending investigation.</p></div><div className="report-paper-footer"><span>AI-generated with analyst review controls</span><span>Page 1 of 4</span></div></div><div className="report-preview-actions"><Button variant="secondary" size="sm" onClick={() => toast.success("Report opened in preview")}>View report</Button><Button variant="ghost" size="sm" onClick={() => toast.success("Demo PDF download started")}><Download size={14} /> Download PDF</Button></div></Panel></div></div>; }
+function buildSecurityReportPdf(reportType: string): Blob {
+  const safeText = (value: string) => value.replace(/[^\x20-\x7E]/g, "-").replace(/([\\()])/g, "\\$1");
+  const created = new Date().toISOString().replace("T", " ").slice(0, 19) + " UTC";
+  const pages = [
+    {
+      heading: "Executive Summary",
+      lines: [
+        "Overall security score: 42 / 100 (Low Risk)",
+        "Threats detected: 284 (+18.4% versus prior period)",
+        "Critical incidents: 3 (one requires investigation)",
+        "Events analyzed: 12,480; AI confidence: 98.6%",
+        "",
+        "CyberShield AI observed elevated credential abuse and web attack activity.",
+        "Existing controls contained the highest-risk requests. One privileged",
+        "authentication incident remains pending analyst investigation."
+      ]
+    },
+    {
+      heading: "Threat Overview",
+      lines: [
+        "Primary pattern: repeated authentication failures against a privileged account.",
+        "Secondary pattern: blocked SQL injection attempts targeting the checkout API.",
+        "Additional activity: port scanning and unusual login locations.",
+        "",
+        "The detection engine correlated related signals and prioritized them by risk.",
+        "No evidence of successful lateral movement was identified in this demo data."
+      ]
+    },
+    {
+      heading: "Incident Response Status",
+      lines: [
+        "Highest-priority incident: INC-2048 - Brute Force Authentication",
+        "Current status: Investigation required",
+        "Affected area: privileged identity access",
+        "",
+        "Recommended response: block the source, rotate affected credentials, confirm",
+        "multi-factor authentication, and review successful logins around the alert window."
+      ]
+    },
+    {
+      heading: "Recommendations",
+      lines: [
+        "1. Complete analyst review of the open privileged-authentication incident.",
+        "2. Confirm MFA and rate-limiting controls for sensitive accounts.",
+        "3. Review web application firewall events related to injection attempts.",
+        "4. Continue monitoring correlated authentication and reconnaissance activity.",
+        "",
+        "This report was generated from synthetic CyberShield AI demo telemetry."
+      ]
+    }
+  ];
+  const contentStream = (heading: string, lines: string[], pageNumber: number) => {
+    const commands = [
+      "BT",
+      "/F1 20 Tf",
+      `50 742 Td (${safeText("CyberShield AI")}) Tj`,
+      "/F1 10 Tf",
+      `0 -22 Td (${safeText(reportType)}) Tj`,
+      "/F1 16 Tf",
+      `0 -45 Td (${safeText(heading)}) Tj`,
+      "/F1 10 Tf"
+    ];
+    lines.forEach((line) => commands.push(`0 -22 Td (${safeText(line)}) Tj`));
+    commands.push("/F1 8 Tf", `0 -70 Td (${safeText(`Generated ${created} | Confidential SOC | Page ${pageNumber} of 4`)}) Tj`, "ET");
+    return commands.join("\n");
+  };
+  const pageObjectNumbers = pages.map((_, index) => 3 + index * 2);
+  const fontObjectNumber = 3 + pages.length * 2;
+  const objects: string[] = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    `<< /Type /Pages /Kids [${pageObjectNumbers.map((number) => `${number} 0 R`).join(" ")}] /Count ${pages.length} >>`
+  ];
+  pages.forEach((page, index) => {
+    const pageObjectNumber = pageObjectNumbers[index];
+    const contentObjectNumber = pageObjectNumber + 1;
+    const stream = contentStream(page.heading, page.lines, index + 1);
+    const streamLength = new TextEncoder().encode(stream).length;
+    objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 ${fontObjectNumber} 0 R >> >> /Contents ${contentObjectNumber} 0 R >>`);
+    objects.push(`<< /Length ${streamLength} >>\nstream\n${stream}\nendstream`);
+  });
+  objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+
+  const byteLength = (value: string) => new TextEncoder().encode(value).length;
+  let pdf = "%PDF-1.4\n";
+  const offsets: number[] = [];
+  objects.forEach((object, index) => {
+    offsets.push(byteLength(pdf));
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+  });
+  const xrefOffset = byteLength(pdf);
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  pdf += offsets.map((offset) => `${String(offset).padStart(10, "0")} 00000 n `).join("\n");
+  pdf += `\ntrailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+  return new Blob([pdf], { type: "application/pdf" });
+}
+
+function downloadSecurityReport(reportType: string) {
+  const blob = buildSecurityReportPdf(reportType);
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `CyberShield-${reportType.replace(/\s+/g, "-")}-${new Date().toISOString().slice(0, 10)}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast.success("PDF report downloaded", { description: "Check your browser Downloads folder." });
+}
+
+function Reports({ onGenerate, generated }: { onGenerate: () => void; generated: boolean }) { const [type, setType] = useState<string>("Daily Security Report"); return <div className="page-content"><SectionHeading eyebrow="GOVERNANCE + COMMUNICATION" title="Security reports" description="Create clear, executive-ready summaries from the current security posture." action={<Button size="sm" onClick={onGenerate} disabled={generated}><FileBarChart size={14} /> {generated ? "Report generated" : "Generate report"}</Button>} /><div className="reports-layout"><Panel title="Report builder" subtitle="Select a template and generate a current snapshot" className="report-builder"><div className="report-types">{["Daily Security Report", "Weekly Security Report", "Incident Report", "Threat Analysis Report"].map((item) => <button key={item} className={type === item ? "active" : ""} onClick={() => setType(item)}><span className="report-type-icon"><FileBarChart size={16} /></span><span><strong>{item}</strong><small>{item === "Incident Report" ? "Deep dive into one response" : "Posture, trends, and actions"}</small></span><ChevronRight size={14} /></button>)}</div><div className="report-builder-footer"><div><span className="card-label">ESTIMATED OUTPUT</span><strong>4 pages · PDF ready</strong></div><Button size="sm" onClick={onGenerate} disabled={generated}>{generated ? <><Check size={14} /> Ready to view</> : <><Sparkles size={14} /> Generate {type}</>}</Button></div></Panel><Panel title="Latest report preview" subtitle={generated ? "Generated just now · Demo workspace" : "Preview updates after generation"} className="report-preview"><div className={`report-paper ${generated ? "generated" : ""}`}><div className="report-paper-head"><div className="report-mini-brand"><div className="brand-mark"><Shield size={13} /></div><span>CyberShield <b>AI</b></span></div><span>CONFIDENTIAL · SOC</span></div><div className="report-paper-title"><span>SECURITY INTELLIGENCE</span><h2>{type}</h2><p>Prepared for Security Operations · August 19, 2026</p></div><div className="report-paper-score"><div><span>OVERALL SCORE</span><strong>42 <small>/ 100</small></strong><b>LOW RISK</b></div><div className="paper-mini-bars"><i /><i /><i /><i /><i /></div></div><div className="report-paper-grid"><div><span>THREATS DETECTED</span><strong>284</strong><small>+18.4% vs prior period</small></div><div><span>CRITICAL INCIDENTS</span><strong>3</strong><small>1 requires investigation</small></div><div><span>EVENTS ANALYZED</span><strong>12,480</strong><small>AI confidence 98.6%</small></div></div><div className="report-paper-line" /><div className="report-paper-summary"><span>EXECUTIVE SUMMARY</span><p>CyberShield AI observed elevated credential abuse and web attack activity. Existing controls contained the highest-risk requests, with one privileged authentication incident pending investigation.</p></div><div className="report-paper-footer"><span>AI-generated with analyst review controls</span><span>Page 1 of 4</span></div></div><div className="report-preview-actions"><Button variant="secondary" size="sm" onClick={() => toast.success("Report opened in preview")}>View report</Button><Button variant="ghost" size="sm" onClick={() => downloadSecurityReport(type)} disabled={!generated}><Download size={14} /> Download PDF</Button></div></Panel></div></div>; }
 
 function Analytics() { return <div className="page-content"><SectionHeading eyebrow="SECURITY PERFORMANCE" title="Analytics" description="Measure detection quality, attack patterns, and response outcomes across the workspace." action={<select className="range-select" defaultValue="7"><option value="1">Last 24 hours</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="custom">Custom range</option></select>} /><div className="analytics-metrics"><div><span>Detection rate</span><strong>98.6%</strong><b className="trend-up"><ArrowUpRight size={12} /> 2.1%</b></div><div><span>Mean time to detect</span><strong>1.8s</strong><b className="trend-down"><ArrowDownRight size={12} /> 0.6s</b></div><div><span>Mean time to resolve</span><strong>42m</strong><b className="trend-down"><ArrowDownRight size={12} /> 14%</b></div><div><span>Incidents resolved</span><strong>87%</strong><b className="trend-up"><ArrowUpRight size={12} /> 8.4%</b></div></div><div className="analytics-grid"><Panel title="Threats over time" subtitle="Detection volume by severity" className="analytics-chart-wide"><div className="chart-wrap"><ResponsiveContainer width="100%" height="100%"><BarChart data={analyticsData}><CartesianGrid stroke="var(--grid)" vertical={false} /><XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fill: "var(--muted-text)", fontSize: 11 }} /><YAxis tickLine={false} axisLine={false} tick={{ fill: "var(--muted-text)", fontSize: 11 }} /><ChartTooltip contentStyle={{ background: "var(--tooltip)", border: "1px solid var(--line)", borderRadius: 10 }} /><Bar dataKey="safe" stackId="a" fill="var(--blue-soft)" radius={[0, 0, 0, 0]} name="Safe" /><Bar dataKey="high" stackId="a" fill="#f59e0b" name="High risk" /><Bar dataKey="critical" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} name="Critical" /></BarChart></ResponsiveContainer></div></Panel><Panel title="Attacks by category" subtitle="Current period" className="analytics-category"><div className="category-bars">{categoryData.slice(0, 4).map((category) => <div key={category.name}><div><span>{category.name}</span><b>{category.value}%</b></div><div className="category-track"><span style={{ width: `${category.value * 2.4}%`, background: category.color }} /></div></div>)}</div></Panel><Panel title="Authentication failures" subtitle="7-day baseline" className="analytics-auth"><div className="chart-wrap"><ResponsiveContainer width="100%" height="100%"><AreaChart data={analyticsData}><defs><linearGradient id="authGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#a78bfa" stopOpacity={0.28} /><stop offset="100%" stopColor="#a78bfa" stopOpacity={0} /></linearGradient></defs><XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fill: "var(--muted-text)", fontSize: 11 }} /><YAxis hide /><ChartTooltip contentStyle={{ background: "var(--tooltip)", border: "1px solid var(--line)", borderRadius: 10 }} /><Area type="monotone" dataKey="high" stroke="#a78bfa" fill="url(#authGradient)" strokeWidth={2} /></AreaChart></ResponsiveContainer></div><div className="chart-foot-stat"><strong>1,842</strong><span>failed attempts</span><b className="trend-up"><ArrowUpRight size={12} /> 27%</b></div></Panel><Panel title="Cloud events" subtitle="Connector distribution" className="analytics-cloud"><div className="cloud-bars"><div><span className="cloud-logo aws">AWS</span><MiniBar value={82} tone="orange" /><strong>82%</strong></div><div><span className="cloud-logo azure">AZ</span><MiniBar value={64} tone="blue" /><strong>64%</strong></div><div><span className="cloud-logo gcp">GCP</span><MiniBar value={48} tone="red" /><strong>48%</strong></div></div><div className="cloud-health"><Cloud size={14} /><span>All connectors healthy</span><b>3 / 3</b></div></Panel></div></div>; }
 
